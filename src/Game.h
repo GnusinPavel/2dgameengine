@@ -9,6 +9,8 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+class AssetManager;
+
 class Game {
 private:
     bool isRunning = false;
@@ -21,6 +23,7 @@ public:
     bool IsRunning() const;
     void Initialize(int width, int height);
     static SDL_Renderer *renderer;
+    static AssetManager* assetManager;
     void LoadLevel(int levelNumber);
     void ProcessInput();
     void Update();
