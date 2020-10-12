@@ -24,6 +24,7 @@ public:
     void Initialize(int width, int height);
     static SDL_Renderer *renderer;
     static AssetManager* assetManager;
+    static SDL_Event event;
     void LoadLevel(int levelNumber);
     void ProcessInput();
     void Update();
