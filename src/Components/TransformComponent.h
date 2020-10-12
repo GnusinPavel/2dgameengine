@@ -10,6 +10,7 @@
 #include "../EntityManger.h"
 #include "../../lib/glm/glm.hpp"
 #include "../Game.h"
+#include "../Constants.h"
 
 class TransformComponent: public Component {
 public:
@@ -34,7 +35,17 @@ public:
     void Update(float deltaTime) override {
         // TODO:
         position.x += velocity.x * deltaTime;
+        if (position.x < 0) {
+            position.x = 0;
+        } else if (int(position.x) > WINDOW_WIDTH - width * scale) {
+            position.x = WINDOW_WIDTH - width * scale;
+        }
         position.y += velocity.y * deltaTime;
+        if (position.y < 0) {
+            position.y = 0;
+        } else if (int(position.y) > WINDOW_HEIGHT - height * scale) {
+            position.y = WINDOW_HEIGHT - height * scale;
+        }
     }
 
     void Render() override {
