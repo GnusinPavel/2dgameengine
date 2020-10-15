@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include "./Constants.h"
 #include "./EntityManger.h"
 #include "./Component.h"
 
@@ -24,10 +25,13 @@ private:
     std::map<const std::type_info *, Component *> componentTypeMap;
 public:
     std::string name;
+    LayerType layer;
 
     Entity(EntityManager &manager);
 
     Entity(EntityManager &manager, std::string name);
+
+    Entity(EntityManager &manager, std::string name, LayerType layer);
 
     void Update(float deltaTime);
 

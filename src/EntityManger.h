@@ -17,8 +17,13 @@ public:
     void Update(float deltaTime);
     void Render();
     bool HasNoEntities();
-    Entity& AddEntity(std::string entityName);
-    std::vector<Entity*> GetEntities() const;
+
+    Entity &AddEntity(std::string entityName, LayerType layer);
+
+    std::vector<Entity *> GetEntities() const;
+
+    std::vector<Entity *> GetEntitiesByLayer(LayerType layer) const;
+
     unsigned int GetEntityCount();
     void ListAllEntities() const;
 };
