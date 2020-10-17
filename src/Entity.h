@@ -63,8 +63,8 @@ public:
     }
 
     template<typename T>
-    bool HasComponents() const {
-        return componentTypeMap.count(&typeid(T)) == 1;
+    bool HasComponent() const {
+        return componentTypeMap.count(&typeid(T));
     }
 };
 
