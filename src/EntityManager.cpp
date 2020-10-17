@@ -18,7 +18,7 @@ bool EntityManager::HasNoEntities() const {
 }
 
 void EntityManager::Update(float deltaTime) {
-    for (auto& entity: entities) {
+    for (auto &entity: entities) {
         entity->Update(deltaTime);
     }
 }
@@ -65,17 +65,31 @@ void EntityManager::ListAllEntities() const {
     }
 }
 
-std::string EntityManager::CheckEntityCollisions(Entity &myEntity) const {
-    ColliderComponent *myCollider = myEntity.GetComponent<ColliderComponent>();
-    for (auto &entity: entities) {
-        if (entity->name != myEntity.name && entity->name != "Tile") {
-            if (entity->HasComponent<ColliderComponent>()) {
-                ColliderComponent *otherCollider = entity->GetComponent<ColliderComponent>();
-                if (Collision::CheckRectangleCollision(myCollider->collider, otherCollider->collider)) {
-                    return otherCollider->colliderTag;
+CollisionType EntityManager::CheckEntityCollisions() const {
+    for (auto &thisEntity: entities) {
+        if (thisEntity->HasComponent<ColliderComponent>()) {
+            ColliderComponent *thisCollider = thisEntity->GetComponent<ColliderComponent>();
+            for (auto &thatEntity: entities) {
+                if (thisEntity->name != thatEntity->name && thatEntity->HasComponent<ColliderComponent>()) {
+                    ColliderComponent *thatCollider = thatEntity->GetComponent<ColliderComponent>();
+                    if (Collision::CheckRectangleCollision(thisCollider->collider, thatCollider->collider)) {
+                        if (thisCollider->colliderTag == "PLAYER" && thatCollider->colliderTag == "ENEMY") {
+                            return PLAYER_ENEMY_COLLISION;
+                        }
+                        if (thisCollider->colliderTag == "PLAYER" && thatCollider->colliderTag == "PROJECTILE") {
+                            return PLAYER_PROJECTILE_COLLISION;
+                        }
+                        if (thisCollider->colliderTag == "ENEMY" &&
+                            thatCollider->colliderTag == "FRIENDLY_PROJECTILE") {
+                            return ENEMY_PROJECTILE_COLLISION;
+                        }
+                        if (thisCollider->colliderTag == "PLAYER" && thatCollider->colliderTag == "LEVEL_COMPLETE") {
+                            return PLAYER_LEVEL_COMPLETE_COLLISION;
+                        }
+                    }
                 }
             }
         }
     }
-    return "";
+    return NO_COLLISION;
 }

@@ -24,17 +24,27 @@ public:
     bool IsRunning() const;
     void Initialize(int width, int height);
     static SDL_Renderer *renderer;
-    static AssetManager* assetManager;
+    static AssetManager *assetManager;
     static SDL_Event event;
     static SDL_Rect camera;
+
     void LoadLevel(int levelNumber);
+
     void ProcessInput();
+
     void Update();
+
     void Render();
+
     void Destroy();
+
     void HandleCameraMovement();
 
     void CheckCollisions();
+
+    void ProcessGameOver();
+
+    void ProcessNextLevel();
 };
 
 #endif //GAME_H

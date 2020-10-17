@@ -31,7 +31,7 @@ public:
 
     Entity &AddEntity(std::string entityName, LayerType layer);
 
-    std::string CheckEntityCollisions(Entity &entity) const;
+    CollisionType CheckEntityCollisions() const;
 };
 
 #endif //ENTITYMANGER_H
