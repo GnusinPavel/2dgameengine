@@ -63,7 +63,7 @@ void Game::Initialize(int width, int height) {
     isRunning = true;
 }
 
-Entity &player(manager.AddEntity("chopper", PLAYER_LAYER));
+Entity *player;
 
 void Game::LoadLevel(int levelNumber) {
     sol::state lua;
@@ -85,10 +85,14 @@ void Game::LoadLevel(int levelNumber) {
         } else {
             sol::table asset = levelAssets[assetIndex];
             std::string assetType = asset["type"];
-            if (assetType.compare("texture") == 0) {
+            if (assetType == "texture") {
                 std::string assetId = asset["id"];
                 std::string assetFile = asset["file"];
                 assetManager->AddTexture(assetId, assetFile.c_str());
+            } else if (assetType == "font") {
+                std::string file = asset["file"];
+                int fontSize = asset["fontSize"];
+                assetManager->AddFont(asset["id"], file.c_str(), fontSize);
             }
         }
         assetIndex++;
@@ -112,6 +116,92 @@ void Game::LoadLevel(int levelNumber) {
         static_cast<int>(levelMap["mapSizeY"])
     );
 
+    // **********************************
+    // * LOADS ENTITIES FROM LUA FILE
+    // **********************************
+    sol::table levelEntities = levelData["entities"];
+    unsigned int entityIndex = 0;
+    while (true) {
+        sol::optional<sol::table> entityTableOpt = levelEntities[entityIndex++];
+        if (entityTableOpt == sol::nullopt) {
+            break;
+        } else {
+            sol::table entityTable = entityTableOpt.value();
+            std::string name = entityTable["name"];
+            LayerType layer = entityTable["layer"];
+
+            Entity &entity(manager.AddEntity(name, layer));
+
+            if (name == "player") {
+                player = &entity;
+            }
+
+            sol::table componentsTable = entityTable["components"];
+            sol::optional<sol::table> transformTableOpt = componentsTable["transform"];
+            if (transformTableOpt != sol::nullopt) {
+                sol::table transform = transformTableOpt.value();
+                int positionX = transform["position"]["x"];
+                int positionY = transform["position"]["y"];
+                int velocityX = transform["velocity"]["x"];
+                int velocityY = transform["velocity"]["y"];
+                int width = transform["width"];
+                int height = transform["height"];
+                int scale = transform["scale"];
+                int rotation = transform["rotation"];
+                entity.AddComponent<TransformComponent>(positionX, positionY, velocityX, velocityY, width, height,
+                                                        scale);
+            }
+            sol::optional<sol::table> spriteTableOpt = componentsTable["sprite"];
+            if (spriteTableOpt != sol::nullopt) {
+                sol::table sprite = spriteTableOpt.value();
+                std::string textureAssetId = sprite["textureAssetId"];
+                bool animated = sprite["animated"].get_or(false);
+                int frameCount = sprite["frameCount"].get_or(1);
+                int animationSpeed = sprite["animationSpeed"].get_or(1);
+                bool hasDirections = sprite["hasDirections"].get_or(false);
+                bool fixed = sprite["fixed"].get_or(false);
+
+                std::cout << "Animated " << animated << std::endl;
+                std::cout << "frameCount " << frameCount << std::endl;
+                std::cout << "animationSpeed " << animationSpeed << std::endl;
+                std::cout << "hasDirections " << hasDirections << std::endl;
+                std::cout << "fixed " << fixed << std::endl;
+
+                entity.AddComponent<SpriteComponent>(textureAssetId, frameCount, animationSpeed, hasDirections, fixed);
+            }
+            sol::optional<sol::table> colliderTableOpt = componentsTable["collider"];
+            if (colliderTableOpt != sol::nullopt) {
+                std::string tag = colliderTableOpt.value()["tag"];
+                TransformComponent *transformComponent = entity.GetComponent<TransformComponent>();
+                entity.AddComponent<ColliderComponent>(
+                    tag, transformComponent->position.x, transformComponent->position.y, transformComponent->width,
+                    transformComponent->height);
+            }
+            sol::optional<sol::table> inputTableOpt = componentsTable["input"];
+            if (inputTableOpt != sol::nullopt) {
+                sol::table input = inputTableOpt.value();
+                std::string up = input["keyboard"]["up"];
+                std::string left = input["keyboard"]["left"];
+                std::string down = input["keyboard"]["down"];
+                std::string right = input["keyboard"]["right"];
+                std::string shoot = input["keyboard"]["shoot"];
+                entity.AddComponent<KeyboardControlComponent>(up, right, down, left, shoot);
+            }
+            sol::optional<sol::table> emitterTableOpt = componentsTable["projectileEmitter"];
+            if (emitterTableOpt != sol::nullopt) {
+                sol::table emitter = emitterTableOpt.value();
+                int speed = emitter["speed"];
+                int range = emitter["range"];
+                int angle = emitter["angle"];
+                int width = emitter["width"];
+                int height = emitter["height"];
+                bool shouldLoop = emitter["shouldLoop"];
+                std::string textureAssetId = emitter["textureAssetId"];
+                entity.AddComponent<ProjectileEmitterComponent>(speed, angle, range, shouldLoop);
+            }
+        }
+    }
+
 //    assetManager->AddTexture("tank-image", std::string("./assets/images/tank-big-right.png").c_str());
 //    assetManager->AddTexture("chopper-image", std::string("./assets/images/chopper-spritesheet.png").c_str());
 //    assetManager->AddTexture("radar-image", std::string("./assets/images/radar.png").c_str());
@@ -123,10 +213,10 @@ void Game::LoadLevel(int levelNumber) {
 //    map = new Map("jungle-tiletexture", 2, 32);
 //    map->LoadMap("./assets/tilemaps/jungle.map", 25, 20);
 
-    player.AddComponent<TransformComponent>(240, 106, 0, 0, 32, 32, 1);
-    player.AddComponent<SpriteComponent>("chopper-texture", 2, 90, true, false);
-    player.AddComponent<KeyboardControlComponent>("up", "right", "down", "left", "space");
-    player.AddComponent<ColliderComponent>("PLAYER", 240, 106, 32, 32);
+//    player.AddComponent<TransformComponent>(240, 106, 0, 0, 32, 32, 1);
+//    player.AddComponent<SpriteComponent>("chopper-texture", 2, 90, true, false);
+//    player.AddComponent<KeyboardControlComponent>("up", "right", "down", "left", "space");
+//    player.AddComponent<ColliderComponent>("PLAYER", 240, 106, 32, 32);
 
 //    Entity &tankEntity(manager.AddEntity("tank", ENEMY_LAYER));
 //    tankEntity.AddComponent<TransformComponent>(150, 495, 0, 0, 32, 32, 1);
@@ -216,7 +306,7 @@ void Game::Destroy() {
 }
 
 void Game::HandleCameraMovement() {
-    TransformComponent *mainPlayerTransform = player.GetComponent<TransformComponent>();
+    TransformComponent *mainPlayerTransform = player->GetComponent<TransformComponent>();
     camera.x = mainPlayerTransform->position.x - (WINDOW_WIDTH / 2);
     camera.y = mainPlayerTransform->position.y - (WINDOW_HEIGHT / 2);
 
